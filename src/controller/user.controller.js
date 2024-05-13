@@ -1,6 +1,10 @@
+const jwt = require('jsonwebtoken');
+
 const { createUser, getUserInfo } = require("../service/user.service");
 
 const { UserRegisterError, UserLoginError } = require("../constant/err.type");
+
+const { JWT_SECRET } = require('../config/config.default')
 
 class UserController {
   async register(ctx, next) {
@@ -20,22 +24,20 @@ class UserController {
     }
   }
   async login(ctx, next) {
-    const { user_name, password } = ctx.request.body;
+    const { user_name } = ctx.request.body;
     try {
-      const res = await getUserInfo({ user_name })
+      const { password, ...res } = await getUserInfo({ user_name })
       ctx.body = {
-        code: 200,
-        result: {
-          id: res.id,
-          user_name: res.user_name,
-        },
+        code: 0,
         msg: "登录成功",
-      };
-    }
-    catch(err) {
-      console.error(err);
-      ctx.app.emit('error', UserLoginError, ctx)
-      return
+        result: {
+          token: jwt.sign(res,JWT_SECRET, {
+            expiresIn: '1d'
+          })
+        }
+      }
+    } catch (error) {
+      console.error('登录失败', err);
     }
   }
 }
